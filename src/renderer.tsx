@@ -20,6 +20,26 @@ class App extends React.PureComponent<AppProps, AppState> {
 		currentUrl: "http://www.chetcorcos.com",
 	}
 
+	webview: React.RefObject<HTMLWebViewElement> = React.createRef()
+
+	componentDidMount() {
+		this.webview.current.addEventListener(
+			"ipc-message",
+			this.handleWebViewMessage
+		)
+	}
+
+	componentWillUnmount() {
+		this.webview.current.removeEventListener(
+			"ipc-message",
+			this.handleWebViewMessage
+		)
+	}
+
+	private handleWebViewMessage = (event: Electron.IpcMessageEvent) => {
+		console.log(event.channel, event.args)
+	}
+
 	private handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
 		const target = event.target as HTMLInputElement
 		this.setState({ inputValue: target.value })
@@ -42,8 +62,12 @@ class App extends React.PureComponent<AppProps, AppState> {
 						onChange={this.handleInputChange}
 					/>
 				</div>
-
-				<webview style={{ flex: 1 }} src={this.state.currentUrl} />
+				<webview
+					ref={this.webview}
+					style={{ flex: 1 }}
+					src={this.state.currentUrl}
+					preload={`file://${__dirname}/inject.js`}
+				/>
 			</div>
 		)
 	}
