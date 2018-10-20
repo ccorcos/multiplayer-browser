@@ -1,6 +1,7 @@
 import * as React from "react"
 import * as PeerJs from "peerjs"
 import { WebviewTag } from "electron"
+import { WebViewMessage } from "./types"
 
 interface AppProps {}
 
@@ -112,8 +113,11 @@ export default class App extends React.PureComponent<AppProps, AppState> {
 	private initializeConnection(connection: PeerJs.DataConnection) {
 		connection.on("open", () => {
 			connection.on("data", data => {
-				console.log("Received", data)
-				this.webview.current.send("mouseevents", data)
+				const message: WebViewMessage = {
+					peerId: connection.peer,
+					message: data,
+				}
+				this.webview.current.send("mouseevents", message)
 			})
 		})
 	}

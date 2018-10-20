@@ -14,3 +14,8 @@ export interface ClickEvent {
 }
 
 export type Message = MouseMoveEvent | ClickEvent
+
+export interface WebViewMessage {
+	peerId: string
+	message: Message
+}
