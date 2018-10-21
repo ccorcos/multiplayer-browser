@@ -8,14 +8,10 @@ function getElementPath(element: HTMLElement): Array<HTMLElement> {
 }
 
 function getTagClassIdSelector(element: HTMLElement) {
-	if (element.id) {
-		return "#" + element.id
-	} else {
-		return [
-			element.tagName.toLowerCase(),
-			...Array.from(element.classList),
-		].join(",")
-	}
+	// document.querySelectorAll doesn't like using ids.
+	return [element.tagName.toLowerCase(), ...Array.from(element.classList)].join(
+		"."
+	)
 }
 
 export function getElementSelector(element: HTMLElement) {

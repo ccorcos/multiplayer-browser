@@ -43,7 +43,7 @@ document.addEventListener(
 		if (syntheticScroll.isBlocking()) {
 			return
 		}
-		let elm = event.currentTarget
+		let elm = event.target
 		if (elm === document) {
 			elm = document.scrollingElement
 		}
