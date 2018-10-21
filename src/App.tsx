@@ -54,6 +54,11 @@ export default class App extends React.PureComponent<AppProps, AppState> {
 				"ipc-message",
 				this.handleWebViewMessage
 			)
+			this.webview.current.addEventListener(
+				"will-navigate",
+				this.handleNavigate
+			)
+			this.webview.current.addEventListener("new-window", this.handleNavigate)
 		}
 	}
 
@@ -62,6 +67,14 @@ export default class App extends React.PureComponent<AppProps, AppState> {
 			this.webview.current.removeEventListener(
 				"ipc-message",
 				this.handleWebViewMessage
+			)
+			this.webview.current.removeEventListener(
+				"will-navigate",
+				this.handleNavigate
+			)
+			this.webview.current.removeEventListener(
+				"new-window",
+				this.handleNavigate
 			)
 		}
 	}
@@ -112,6 +125,12 @@ export default class App extends React.PureComponent<AppProps, AppState> {
 
 			this.initializeConnection(connection)
 		}
+	}
+
+	private handleNavigate = (
+		event: Electron.WillNavigateEvent | Electron.NewWindowEvent
+	) => {
+		this.setState({ currentUrl: event.url })
 	}
 
 	private initializeConnection(connection: PeerJs.DataConnection) {
