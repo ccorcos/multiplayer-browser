@@ -11,7 +11,6 @@ npm run watch # lets you refresh to update
 
 ## To do
 
-- reddit comment popup scroll doesnt sync
 - sync typing
 - clicking altKey and shiftKey.
 

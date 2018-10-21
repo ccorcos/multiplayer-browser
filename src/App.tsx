@@ -61,6 +61,10 @@ export default class App extends React.PureComponent<AppProps, AppState> {
 				this.handleNavigate
 			)
 			this.webview.current.addEventListener("new-window", this.handleNavigate)
+			this.webview.current.addEventListener(
+				"did-navigate-in-page",
+				this.handleNavigate
+			)
 		}
 	}
 
@@ -76,6 +80,10 @@ export default class App extends React.PureComponent<AppProps, AppState> {
 			)
 			this.webview.current.removeEventListener(
 				"new-window",
+				this.handleNavigate
+			)
+			this.webview.current.removeEventListener(
+				"did-navigate-in-page",
 				this.handleNavigate
 			)
 		}
