@@ -1,5 +1,10 @@
 import { ipcRenderer } from "electron"
-import { MouseMoveEvent, ClickEvent, MessageEvent, ScrollEvent } from "./types"
+import {
+	MouseMoveEvent,
+	ClickEvent,
+	WebViewMessage,
+	ScrollEvent,
+} from "./types"
 import { getElementSelector } from "./domHelpers"
 
 const cursorClassName = "cursor"
@@ -19,6 +24,19 @@ class EventBlocker {
 
 const syntheticClick = new EventBlocker()
 const syntheticScroll = new EventBlocker()
+
+window.addEventListener(
+	"mousemove",
+	event => {
+		const mouseMoveEvent: MouseMoveEvent = {
+			type: "mousemove",
+			pageX: event.pageX,
+			pageY: event.pageY,
+		}
+		ipcRenderer.sendToHost("mouseevents", mouseMoveEvent)
+	},
+	true
+)
 
 window.addEventListener(
 	"click",
@@ -60,7 +78,30 @@ document.addEventListener(
 	true
 )
 
-ipcRenderer.on("mouseevents", (sender, event: MessageEvent) => {
+const cursorDivs: { [peerId: string]: HTMLDivElement | undefined } = {}
+
+ipcRenderer.on("mouseevents", (sender, event: WebViewMessage) => {
+	let cursorDiv = cursorDivs[event.peerId]
+	if (!cursorDiv) {
+		cursorDiv = document.createElement("div")
+		cursorDiv.style.position = "absolute"
+		cursorDiv.style.height = "5px"
+		cursorDiv.style.width = "5px"
+		cursorDiv.style.borderRadius = "5px"
+		cursorDiv.style.background = "red"
+		cursorDiv.style.pointerEvents = "none"
+		cursorDiv.classList.add(cursorClassName)
+		// cursorDiv.style.border = "1px solid red"
+		// cursorDiv.innerText = event.peerId
+		document.body.appendChild(cursorDiv)
+		cursorDivs[event.peerId] = cursorDiv
+	}
+
+	if (event.message.type === "mousemove") {
+		cursorDiv.style.top = event.message.pageY + "px"
+		cursorDiv.style.left = event.message.pageX + "px"
+	}
+
 	// console.log("event", JSON.stringify(event, null, 2))
 
 	if (event.message.type === "click") {

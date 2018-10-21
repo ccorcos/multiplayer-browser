@@ -1,7 +1,7 @@
 import * as React from "react"
 import * as PeerJs from "peerjs"
 import { WebviewTag } from "electron"
-import { Message, MessageEvent, MouseMoveEvent } from "./types"
+import { WebViewMessage } from "./types"
 
 interface AppProps {}
 
@@ -10,37 +10,10 @@ interface AppState {
 	currentUrl: string
 	peerId: string | undefined
 	peerConnections: {
-		[peerId: string]: PeerJs.DataConnection
-	}
-	peerCursors: {
-		[peerId: string]: { pageX: number; pageY: number }
+		[key: string]: PeerJs.DataConnection
 	}
 	peerInputValue: string
 }
-
-// const cursorDivs: { [peerId: string]: HTMLDivElement | undefined } = {}
-
-// ipcRenderer.on("mouseevents", (sender, event: WebViewMessage) => {
-// 	let cursorDiv = cursorDivs[event.peerId]
-// 	if (!cursorDiv) {
-// 		cursorDiv = document.createElement("div")
-// 		cursorDiv.style.position = "absolute"
-// 		cursorDiv.style.height = "5px"
-// 		cursorDiv.style.width = "5px"
-// 		cursorDiv.style.borderRadius = "5px"
-// 		cursorDiv.style.background = "red"
-// 		cursorDiv.style.pointerEvents = "none"
-// 		cursorDiv.classList.add(cursorClassName)
-// 		// cursorDiv.style.border = "1px solid red"
-// 		// cursorDiv.innerText = event.peerId
-// 		document.body.appendChild(cursorDiv)
-// 		cursorDivs[event.peerId] = cursorDiv
-// 	}
-
-// 	if (event.message.type === "mousemove") {
-// 		cursorDiv.style.top = event.message.pageY + "px"
-// 		cursorDiv.style.left = event.message.pageX + "px"
-// 	}
 
 export default class App extends React.PureComponent<AppProps, AppState> {
 	state: AppState = {
@@ -48,7 +21,6 @@ export default class App extends React.PureComponent<AppProps, AppState> {
 		currentUrl: "http://www.chetcorcos.com",
 		peerId: undefined,
 		peerConnections: {},
-		peerCursors: {},
 		peerInputValue: "",
 	}
 
@@ -74,19 +46,6 @@ export default class App extends React.PureComponent<AppProps, AppState> {
 			})
 			this.initializeConnection(connection)
 		})
-
-		window.addEventListener(
-			"mousemove",
-			event => {
-				const mouseMoveEvent: MouseMoveEvent = {
-					type: "mousemove",
-					pageX: event.pageX,
-					pageY: event.pageY,
-				}
-				this.broadcastMessage(mouseMoveEvent)
-			},
-			true
-		)
 	}
 
 	componentDidMount() {
@@ -121,25 +80,11 @@ export default class App extends React.PureComponent<AppProps, AppState> {
 	}
 
 	private handleWebViewMessage = (event: Electron.IpcMessageEvent) => {
-		this.broadcastMessage(event.args[0])
-	}
-
-	private broadcastMessage = (event: Message) => {
+		// console.log(event.channel, event.args)
 		Object.keys(this.state.peerConnections).map(peerId => {
 			const connection = this.state.peerConnections[peerId]
-			connection.send(event)
+			connection.send(event.args[0])
 		})
-	}
-
-	private handleEvent = (event: MessageEvent) => {
-		if (event.message.type === "mousemove") {
-			this.setState({
-				peerCursors: {
-					...this.state.peerCursors,
-					[event.peerId]: event.message,
-				},
-			})
-		}
 	}
 
 	private handleUrlInputChange = (
@@ -191,13 +136,12 @@ export default class App extends React.PureComponent<AppProps, AppState> {
 	private initializeConnection(connection: PeerJs.DataConnection) {
 		connection.on("open", () => {
 			connection.on("data", data => {
-				const message: MessageEvent = {
+				const message: WebViewMessage = {
 					peerId: connection.peer,
 					message: data,
 				}
 				if (this.webview.current) {
 					this.webview.current.send("mouseevents", message)
-					this.handleEvent(message)
 				}
 			})
 		})
@@ -241,25 +185,6 @@ export default class App extends React.PureComponent<AppProps, AppState> {
 						preload={`file://${__dirname}/inject.js`}
 					/>
 				</div>
-
-				{Object.keys(this.state.peerCursors).map(peerId => {
-					const { pageX, pageY } = this.state.peerCursors[peerId]
-					return (
-						<div
-							key={peerId}
-							style={{
-								position: "absolute",
-								height: 5,
-								width: 5,
-								borderRadius: 5,
-								background: "red",
-								pointerEvents: "none",
-								top: pageY,
-								left: pageX,
-							}}
-						/>
-					)
-				})}
 			</div>
 		)
 	}
