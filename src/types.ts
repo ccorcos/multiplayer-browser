@@ -20,9 +20,15 @@ export interface ScrollEvent {
 	selector: string
 }
 
-export type Message = MouseMoveEvent | ClickEvent | ScrollEvent
+export interface NavigateEvent {
+	type: "navigate"
+	url: string
+}
 
-export interface WebViewMessage {
+// TODO: better naming here.
+export type Message = MouseMoveEvent | ClickEvent | ScrollEvent | NavigateEvent
+
+export interface MessageEvent {
 	peerId: string
 	message: Message
 }

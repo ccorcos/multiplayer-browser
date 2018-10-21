@@ -11,8 +11,10 @@ npm run watch # lets you refresh to update
 
 ## To do
 
-- why can't I navigate anywhere else?
+- reddit comment popup scroll doesnt sync
 - sync typing
-- sync navigation
-- cursors should live in the renderer instead of the website
 - clicking altKey and shiftKey.
+
+- contacts list to re-establish connections after refresh.
+- mutliple tabs / channels
+- chatroom

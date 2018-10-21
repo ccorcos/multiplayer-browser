@@ -1,26 +1,9 @@
 import { ipcRenderer } from "electron"
-import {
-	MouseMoveEvent,
-	ClickEvent,
-	WebViewMessage,
-	ScrollEvent,
-} from "./types"
+import { MouseMoveEvent, ClickEvent, MessageEvent, ScrollEvent } from "./types"
 import { getElementSelector } from "./domHelpers"
+import EventBlocker from "./EventBlocker"
 
 const cursorClassName = "cursor"
-
-class EventBlocker {
-	count = 0
-	block = () => {
-		this.count += 1
-	}
-	unblock = () => {
-		this.count -= 1
-	}
-	isBlocking = () => {
-		return this.count !== 0
-	}
-}
 
 const syntheticClick = new EventBlocker()
 const syntheticScroll = new EventBlocker()
@@ -80,7 +63,7 @@ document.addEventListener(
 
 const cursorDivs: { [peerId: string]: HTMLDivElement | undefined } = {}
 
-ipcRenderer.on("mouseevents", (sender, event: WebViewMessage) => {
+ipcRenderer.on("mouseevents", (sender, event: MessageEvent) => {
 	let cursorDiv = cursorDivs[event.peerId]
 	if (!cursorDiv) {
 		cursorDiv = document.createElement("div")

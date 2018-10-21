@@ -1,7 +1,8 @@
 import * as React from "react"
 import * as PeerJs from "peerjs"
 import { WebviewTag } from "electron"
-import { WebViewMessage } from "./types"
+import { MessageEvent, Message, NavigateEvent } from "./types"
+import EventBlocker from "./EventBlocker"
 
 interface AppProps {}
 
@@ -26,6 +27,7 @@ export default class App extends React.PureComponent<AppProps, AppState> {
 
 	private webview: React.RefObject<WebviewTag> = React.createRef()
 	private peer: PeerJs
+	private syntheticNavigate = new EventBlocker()
 
 	constructor(props: AppProps) {
 		super(props)
@@ -80,10 +82,13 @@ export default class App extends React.PureComponent<AppProps, AppState> {
 	}
 
 	private handleWebViewMessage = (event: Electron.IpcMessageEvent) => {
-		// console.log(event.channel, event.args)
+		this.handleBroadcastMessage(event.args[0])
+	}
+
+	private handleBroadcastMessage = (message: Message) => {
 		Object.keys(this.state.peerConnections).map(peerId => {
 			const connection = this.state.peerConnections[peerId]
-			connection.send(event.args[0])
+			connection.send(message)
 		})
 	}
 
@@ -98,7 +103,7 @@ export default class App extends React.PureComponent<AppProps, AppState> {
 		event: React.KeyboardEvent<HTMLInputElement>
 	) => {
 		if (event.key === "Enter") {
-			this.setState({ currentUrl: this.state.urlInputValue })
+			this.handleNavigate({ url: this.state.urlInputValue })
 		}
 	}
 
@@ -128,23 +133,39 @@ export default class App extends React.PureComponent<AppProps, AppState> {
 	}
 
 	private handleNavigate = (
-		event: Electron.WillNavigateEvent | Electron.NewWindowEvent
+		event: { url: string }
+		// event: Electron.WillNavigateEvent | Electron.NewWindowEvent | NavigateEvent
 	) => {
 		this.setState({ currentUrl: event.url })
+		if (!this.syntheticNavigate.isBlocking()) {
+			this.handleBroadcastMessage({
+				type: "navigate",
+				url: event.url,
+			})
+		}
 	}
 
 	private initializeConnection(connection: PeerJs.DataConnection) {
 		connection.on("open", () => {
 			connection.on("data", data => {
-				const message: WebViewMessage = {
+				const message: MessageEvent = {
 					peerId: connection.peer,
 					message: data,
 				}
 				if (this.webview.current) {
 					this.webview.current.send("mouseevents", message)
+					this.handleMessageEvent(message)
 				}
 			})
 		})
+	}
+
+	private handleMessageEvent = (event: MessageEvent) => {
+		if (event.message.type === "navigate") {
+			this.syntheticNavigate.block()
+			this.handleNavigate(event.message)
+			setTimeout(this.syntheticNavigate.unblock)
+		}
 	}
 
 	render() {
