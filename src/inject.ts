@@ -1,15 +1,37 @@
 import { ipcRenderer } from "electron"
-import { MouseMoveEvent, ClickEvent, Message, WebViewMessage } from "./types"
+import {
+	MouseMoveEvent,
+	ClickEvent,
+	WebViewMessage,
+	ScrollEvent,
+} from "./types"
+import { getElementSelector } from "./domHelpers"
 
-let syntheticClick = false
+const cursorClassName = "cursor"
+
+class EventBlocker {
+	count = 0
+	block = () => {
+		this.count += 1
+	}
+	unblock = () => {
+		this.count -= 1
+	}
+	isBlocking = () => {
+		return this.count !== 0
+	}
+}
+
+const syntheticClick = new EventBlocker()
+const syntheticScroll = new EventBlocker()
 
 window.addEventListener(
 	"mousemove",
 	event => {
 		const mouseMoveEvent: MouseMoveEvent = {
 			type: "mousemove",
-			clientX: event.clientX,
-			clientY: event.clientY,
+			pageX: event.pageX,
+			pageY: event.pageY,
 		}
 		ipcRenderer.sendToHost("mouseevents", mouseMoveEvent)
 	},
@@ -19,7 +41,7 @@ window.addEventListener(
 window.addEventListener(
 	"click",
 	event => {
-		if (syntheticClick) {
+		if (syntheticClick.isBlocking()) {
 			return
 		}
 		const clickEvent: ClickEvent = {
@@ -28,6 +50,30 @@ window.addEventListener(
 			clientY: event.clientY,
 		}
 		ipcRenderer.sendToHost("mouseevents", clickEvent)
+	},
+	true
+)
+
+document.addEventListener(
+	"scroll",
+	event => {
+		if (syntheticScroll.isBlocking()) {
+			return
+		}
+		let elm = event.currentTarget
+		if (elm === document) {
+			elm = document.scrollingElement
+		}
+
+		if (elm instanceof HTMLElement) {
+			const mouseMoveEvent: ScrollEvent = {
+				type: "scroll",
+				scrollTop: elm.scrollTop,
+				scrollLeft: elm.scrollLeft,
+				selector: getElementSelector(elm),
+			}
+			ipcRenderer.sendToHost("mouseevents", mouseMoveEvent)
+		}
 	},
 	true
 )
@@ -43,7 +89,8 @@ ipcRenderer.on("mouseevents", (sender, event: WebViewMessage) => {
 		cursorDiv.style.width = "5px"
 		cursorDiv.style.borderRadius = "5px"
 		cursorDiv.style.background = "red"
-		cursorDiv.classList.add("cursor")
+		cursorDiv.style.pointerEvents = "none"
+		cursorDiv.classList.add(cursorClassName)
 		// cursorDiv.style.border = "1px solid red"
 		// cursorDiv.innerText = event.peerId
 		document.body.appendChild(cursorDiv)
@@ -51,23 +98,49 @@ ipcRenderer.on("mouseevents", (sender, event: WebViewMessage) => {
 	}
 
 	if (event.message.type === "mousemove") {
-		cursorDiv.style.top = event.message.clientY + "px"
-		cursorDiv.style.left = event.message.clientX + "px"
+		cursorDiv.style.top = event.message.pageY + "px"
+		cursorDiv.style.left = event.message.pageX + "px"
 	}
 
-	console.log("event", event)
+	// console.log("event", JSON.stringify(event, null, 2))
 
 	if (event.message.type === "click") {
-		const elm = document.elementsFromPoint(
+		const elms = document.elementsFromPoint(
 			event.message.clientX,
 			event.message.clientY
 		)
-		// TODO: Ignore the cursor!
-		console.log("click", elm)
+
+		console.log("click", elms, event.message)
+
+		// There's probably a cursor right where you're clicking so skip that.
+		let elm: Element | undefined = elms[0]
+		if (elm instanceof HTMLElement && elm.classList.contains(cursorClassName)) {
+			elm = elms[1]
+		}
+
 		if (elm instanceof HTMLElement) {
-			syntheticClick = true
+			syntheticClick.block()
 			elm.click()
-			syntheticClick = false
+			setTimeout(syntheticClick.unblock)
+		}
+	}
+
+	if (event.message.type === "scroll") {
+		const elm = document.querySelector(event.message.selector)
+		if (elm && elm instanceof HTMLElement) {
+			syntheticScroll.block()
+			// if (elm.scrollTop !== event.message.scrollTop) {
+			// 	elm.scrollTop = event.message.scrollTop
+			// }
+			// if (elm.scrollLeft !== event.message.scrollLeft) {
+			// 	elm.scrollLeft = event.message.scrollLeft
+			// }
+			elm.scrollTo({
+				left: event.message.scrollLeft,
+				top: event.message.scrollTop,
+			})
+			// Give some time to prevent race conditions.
+			setTimeout(syntheticScroll.unblock, 50)
 		}
 	}
 })

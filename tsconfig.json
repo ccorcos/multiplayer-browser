@@ -2,7 +2,9 @@
 	"compilerOptions": {
 		"module": "commonjs",
 		"sourceMap": true,
+		"strictNullChecks": true,
 		"jsx": "react",
+		"lib": ["es6", "es2017", "dom", "scripthost", "esnext.asynciterable"],
 		"outDir": "dist",
 		"baseUrl": ".",
 		"paths": {

@@ -3,8 +3,8 @@
 
 export interface MouseMoveEvent {
 	type: "mousemove"
-	clientX: number
-	clientY: number
+	pageX: number
+	pageY: number
 }
 
 export interface ClickEvent {
@@ -13,7 +13,14 @@ export interface ClickEvent {
 	clientY: number
 }
 
-export type Message = MouseMoveEvent | ClickEvent
+export interface ScrollEvent {
+	type: "scroll"
+	scrollTop: number
+	scrollLeft: number
+	selector: string
+}
+
+export type Message = MouseMoveEvent | ClickEvent | ScrollEvent
 
 export interface WebViewMessage {
 	peerId: string

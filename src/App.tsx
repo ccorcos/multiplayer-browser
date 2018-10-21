@@ -49,17 +49,21 @@ export default class App extends React.PureComponent<AppProps, AppState> {
 	}
 
 	componentDidMount() {
-		this.webview.current.addEventListener(
-			"ipc-message",
-			this.handleWebViewMessage
-		)
+		if (this.webview.current) {
+			this.webview.current.addEventListener(
+				"ipc-message",
+				this.handleWebViewMessage
+			)
+		}
 	}
 
 	componentWillUnmount() {
-		this.webview.current.removeEventListener(
-			"ipc-message",
-			this.handleWebViewMessage
-		)
+		if (this.webview.current) {
+			this.webview.current.removeEventListener(
+				"ipc-message",
+				this.handleWebViewMessage
+			)
+		}
 	}
 
 	private handleWebViewMessage = (event: Electron.IpcMessageEvent) => {
@@ -117,7 +121,9 @@ export default class App extends React.PureComponent<AppProps, AppState> {
 					peerId: connection.peer,
 					message: data,
 				}
-				this.webview.current.send("mouseevents", message)
+				if (this.webview.current) {
+					this.webview.current.send("mouseevents", message)
+				}
 			})
 		})
 	}
