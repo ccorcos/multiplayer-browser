@@ -22,7 +22,7 @@ export interface ScrollEvent {
 
 export type Message = MouseMoveEvent | ClickEvent | ScrollEvent
 
-export interface WebViewMessage {
+export interface MessageEvent {
 	peerId: string
 	message: Message
 }
